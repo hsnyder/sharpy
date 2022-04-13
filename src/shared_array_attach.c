@@ -95,17 +95,27 @@ static PyObject *do_attach(const char *name)
 
 	PyArray_Descr* dtype = PyArray_DescrFromType(descr->typenum);
 	if(!dtype) abort();
+	const int ndims = array_descr_ndims(descr);
 	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
-	for (int i = 0; i < array_descr_ndims(descr); i++) 
+	for (int i = 0; i < ndims; i++) 
 		strides_bytes[i] = descr->stride[i] * dtype->elsize;
 	Py_DECREF(dtype);
 	dtype = NULL;
 
+	/* Figure out if the array is contiguous */
+	int contig = 1;
+	for (int i = 0; i < ndims-1; i++) {
+		if (descr->stride[i] != descr->shape[i+1] * descr->stride[i+1]) {
+			contig = 0;
+			break;
+		}
+	}
+
 	/* Create the array object */
-	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
+	array = PyArray_New(&PyArray_Type, ndims, descr->shape,
 	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
-	                    NPY_ARRAY_BEHAVED, NULL);
-	//NPY_ARRAY_CARRAY
+	                    (contig ? NPY_ARRAY_CARRAY : NPY_ARRAY_BEHAVED), NULL);
+	if(!array) return NULL;
 
 	/* Attach MapOwner to the array */
 	PyArray_SetBaseObject((PyArrayObject *) array, (PyObject *) map_owner);

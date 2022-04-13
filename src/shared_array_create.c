@@ -127,7 +127,6 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	for (int i = 0; i < array_descr_ndims(descr); i++) 
 		strides_bytes[i] = descr->stride[i] * dtype->elsize;
 
-
 	/* Hand over the memory map to a MapOwner instance */
 	map_owner = PyObject_MALLOC(sizeof (*map_owner));
 	PyObject_INIT((PyObject *) map_owner, &PyMapOwner_Type);
@@ -138,7 +137,9 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
 	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
-	                    NPY_ARRAY_BEHAVED, NULL);
+	                    (aligned ? NPY_ARRAY_BEHAVED : NPY_ARRAY_CARRAY), NULL);
+
+	if(!array) return NULL;
 
 	/* Attach MapOwner to the array */
 	PyArray_SetBaseObject((PyArrayObject *) array, (PyObject *) map_owner);
