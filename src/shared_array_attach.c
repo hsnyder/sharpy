@@ -70,7 +70,7 @@ static PyObject *do_attach(const char *name)
 		return PyErr_SetFromErrnoWithFilename(PyExc_OSError, name);
 
 	/* Check the descr data */
-	descr = (struct array_descr *) (map_addr + (map_size - sizeof (*descr)));
+	descr = (struct array_descr *) map_addr;
 	if (descr->magic != SHARED_ARRAY_MAGIC) {
 		munmap(map_addr, map_size);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
@@ -103,8 +103,9 @@ static PyObject *do_attach(const char *name)
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, strides_bytes, map_addr, 0,
-	                    NPY_ARRAY_CARRAY, NULL);
+	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
+	                    NPY_ARRAY_BEHAVED, NULL);
+	//NPY_ARRAY_CARRAY
 
 	/* Attach MapOwner to the array */
 	PyArray_SetBaseObject((PyArrayObject *) array, (PyObject *) map_owner);

@@ -95,22 +95,25 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 		return PyErr_SetFromErrnoWithFilename(PyExc_OSError, name);
 
 	/* Append the descr-data to the array in memory */
-	descr = (struct array_descr *) (map_addr + (map_size - sizeof (*descr)));
+	descr = (struct array_descr *) map_addr;
 	*descr = (struct array_descr){
 		.magic   = SHARED_ARRAY_MAGIC, 
 		.typenum = dtype->type_num
 	};
+
 	for (int i = 0; i < ndims; i++)
 		descr->shape[i] = dims[i];
 
-	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
 	for (int i = 0; i < ndims; i++) {
 		descr->stride[i] = 1;
 		for (int j = i + 1; j < ndims; j++) {
-			descr->stride[i] *= descr->shape[i];
+			descr->stride[i] *= descr->shape[j];
 		}
-		strides_bytes[i] = descr->stride[i] * dtype->elsize;
 	}
+
+	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
+	for (int i = 0; i < array_descr_ndims(descr); i++) 
+		strides_bytes[i] = descr->stride[i] * dtype->elsize;
 
 
 	/* Hand over the memory map to a MapOwner instance */
@@ -122,8 +125,8 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, strides_bytes, map_addr, 0,
-	                    NPY_ARRAY_CARRAY, NULL);
+	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
+	                    NPY_ARRAY_BEHAVED, NULL);
 
 	/* Attach MapOwner to the array */
 	PyArray_SetBaseObject((PyArrayObject *) array, (PyObject *) map_owner);
