@@ -93,10 +93,6 @@ supported_type(enum NPY_TYPES t)
 }
 
 
-/* ArrayDesc object */
-extern PyStructSequence_Desc PyArrayDescObject_Desc;
-extern PyTypeObject PyArrayDescObject_Type;
-
 /* Main functions */
 extern PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *kwds);
 extern PyObject *shared_array_attach(PyObject *self, PyObject *args);

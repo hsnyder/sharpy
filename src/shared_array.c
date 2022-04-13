@@ -105,12 +105,6 @@ static PyObject *module_init(void)
 	Py_INCREF(&PyMapOwner_Type);
 	PyModule_AddObject(m, module_name, (PyObject *) &PyMapOwner_Type);
 
-	/* Register the ArrayDescr type */
-	PyStructSequence_InitType(&PyArrayDescObject_Type, &PyArrayDescObject_Desc);
-	PyType_Ready(&PyArrayDescObject_Type);
-	Py_INCREF(&PyArrayDescObject_Type);
-	PyModule_AddObject(m, module_name, (PyObject *) &PyArrayDescObject_Type);
-
 	return m;
 }
 
