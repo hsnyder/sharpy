@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include "shared_array.h"
 #include "map_owner.h"
 
@@ -91,9 +92,18 @@ static PyObject *do_attach(const char *name)
 	map_owner->map_size = map_size;
 	map_owner->name = strdup(name);
 
+
+	PyArray_Descr* dtype = PyArray_DescrFromType(descr->typenum);
+	if(!dtype) abort();
+	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
+	for (int i = 0; i < array_descr_ndims(descr); i++) 
+		strides_bytes[i] = descr->stride[i] * dtype->elsize;
+	Py_DECREF(dtype);
+	dtype = NULL;
+
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, descr->stride, map_addr, 0,
+	                    descr->typenum, strides_bytes, map_addr, 0,
 	                    NPY_ARRAY_CARRAY, NULL);
 
 	/* Attach MapOwner to the array */

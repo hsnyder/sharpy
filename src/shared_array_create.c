@@ -40,7 +40,6 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	size_t size;
 	size_t map_size;
 	unsigned char *map_addr;
-	int i;
 	int fd;
 	struct stat file_info;
 	PyObject *array;
@@ -65,7 +64,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 
 	/* Calculate the memory size of the array */
 	size = dtype->elsize;
-	for (i = 0; i < ndims; i++)
+	for (int i = 0; i < ndims; i++)
 		size *= dims[i];
 
 	/* Calculate the size of the mmap'd area */
@@ -101,13 +100,18 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 		.magic   = SHARED_ARRAY_MAGIC, 
 		.typenum = dtype->type_num
 	};
-	for (i = 0; i < ndims; i++)
+	for (int i = 0; i < ndims; i++)
 		descr->shape[i] = dims[i];
-	for (i = 0; i < ndims; i++) {
+
+	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
+	for (int i = 0; i < ndims; i++) {
 		descr->stride[i] = 1;
-		for (int j = i + 1; j < ndims; j++) 
+		for (int j = i + 1; j < ndims; j++) {
 			descr->stride[i] *= descr->shape[i];
+		}
+		strides_bytes[i] = descr->stride[i] * dtype->elsize;
 	}
+
 
 	/* Hand over the memory map to a MapOwner instance */
 	map_owner = PyObject_MALLOC(sizeof (*map_owner));
@@ -118,7 +122,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, descr->stride, map_addr, 0,
+	                    descr->typenum, strides_bytes, map_addr, 0,
 	                    NPY_ARRAY_CARRAY, NULL);
 
 	/* Attach MapOwner to the array */

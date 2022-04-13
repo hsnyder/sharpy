@@ -6,8 +6,10 @@ PY_INC_DIR=$(shell python -c 'import sysconfig; print(sysconfig.get_paths()["inc
 SRCFILES=$(shell find src -name '*.c')
 HDRFILES=$(shell find src -name '*.h')
 
+# Wanted to add: -Wswitch-enum -Werror , but some versions of numpy headers break.
+
 Sharpy.so: $(SRCFILES) $(HDRFILES)
-	cc -Wall -Wextra -Wswitch-enum -pedantic -Werror -I$(NPY_INC_DIR) -I$(PY_INC_DIR) -Isrc -fPIC -O2 -shared $(SRCFILES) -o $(@)
+	cc -Wall -Wextra -I$(NPY_INC_DIR) -I$(PY_INC_DIR) -Isrc -fPIC -O2 -shared $(SRCFILES) -o $(@)
 
 	
 
