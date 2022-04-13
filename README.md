@@ -1,3 +1,8 @@
+(This is a fork of SharedArray by tenzing, which can be found at:
+ https://gitlab.com/tenzing/shared-array).
+The vast majority of the credit goes to tenzing.
+
+
 # SharedArray python/numpy extension
 
 This is a simple python extension that lets you share numpy arrays
