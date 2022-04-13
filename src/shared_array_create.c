@@ -113,7 +113,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	descr = (struct array_descr *) map_addr;
 	*descr = (struct array_descr){
 		.magic   = SHARED_ARRAY_MAGIC, 
-		.typenum = dtype->type_num
+		.typenum = from_pytype(dtype->type_num)
 	};
 
 	for (int i = 0; i < ndims; i++)
@@ -136,7 +136,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
+	                    to_pytype(descr->typenum), strides_bytes, map_addr + sizeof(struct array_descr), 0,
 	                    (aligned ? NPY_ARRAY_BEHAVED : NPY_ARRAY_CARRAY), NULL);
 
 	if(!array) return NULL;

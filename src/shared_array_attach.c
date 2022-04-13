@@ -78,10 +78,10 @@ static PyObject *do_attach(const char *name)
 	}
 
 	/* Check that the type is supported */
-	if (!supported_type(descr->typenum)) {
+	if (!supported_type(to_pytype(descr->typenum))) {
 		PyErr_Format(PyExc_ValueError,
 			     "Unsupported data type %d",
-			     descr->typenum);
+			     to_pytype(descr->typenum));
 		return NULL;
 	}
 
@@ -93,7 +93,7 @@ static PyObject *do_attach(const char *name)
 	map_owner->name = strdup(name);
 
 
-	PyArray_Descr* dtype = PyArray_DescrFromType(descr->typenum);
+	PyArray_Descr* dtype = PyArray_DescrFromType(to_pytype(descr->typenum));
 	if(!dtype) abort();
 	const int ndims = array_descr_ndims(descr);
 	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
@@ -113,7 +113,7 @@ static PyObject *do_attach(const char *name)
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, ndims, descr->shape,
-	                    descr->typenum, strides_bytes, map_addr + sizeof(struct array_descr), 0,
+	                    to_pytype(descr->typenum), strides_bytes, map_addr + sizeof(struct array_descr), 0,
 	                    (contig ? NPY_ARRAY_CARRAY : NPY_ARRAY_BEHAVED), NULL);
 	if(!array) return NULL;
 

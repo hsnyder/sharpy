@@ -92,6 +92,22 @@ supported_type(enum NPY_TYPES t)
 	}
 }
 
+/*
+	One of the potential applications for numpy arrays backed by POSIX shared memory is to
+	share data between Python and programs written in another language. 
+	In order to avoid the need for that other program to know about the NPY_{whatever} type
+	enumerations above, an optional translation layer is provided.
+
+	Define DTYPE_TRANSLATION, and supply the following two functions in dtype_translation.h
+*/
+
+#ifndef DTYPE_TRANSLATION
+static inline int to_pytype(int outsidetype) { return outsidetype; }
+static inline int from_pytype(int pytype) { return pytype; }
+#else
+#include "dtype_translation.h"
+#endif
+
 
 /* Main functions */
 extern PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *kwds);
