@@ -29,7 +29,7 @@
 const int ACTUAL_MAXDIMS = NPY_MAXDIMS < SHARED_ARRAY_MAX_DIMS ? NPY_MAXDIMS : SHARED_ARRAY_MAX_DIMS;
 
 /* Module name */
-static const char module_name[] = "SharedArray";
+static const char module_name[] = "Sharpy";
 
 /* Module documentation string */
 static const char module_docstring[] =
@@ -112,12 +112,12 @@ static PyObject *module_init(void)
  * Python 2.7 compatibility blob
  */
 #if PY_MAJOR_VERSION >= 3
-PyMODINIT_FUNC PyInit_SharedArray(void)
+PyMODINIT_FUNC PyInit_Sharpy(void)
 {
 	return module_init();
 }
 #else
-PyMODINIT_FUNC initSharedArray(void)
+PyMODINIT_FUNC initSharpy(void)
 {
 	module_init();
 }
