@@ -36,10 +36,6 @@ print(b[0])
 del a
 print(b[0])
 
-# See how "test" is still present in shared memory even though we
-# destroyed the array a. This method only works on Linux.
-sa.list()
-
 # Now destroy the array "test" from memory.
 sa.delete("test")
 
@@ -99,14 +95,6 @@ After calling `delete`, the array will not be attachable anymore, but
 existing attachments will remain valid until they are themselves
 destroyed. The data is reclaimed by the system when the very last
 attachment is deleted.
-
-### SharedArray.list()
-
-This function returns a list of previously created arrays stored as
-POSIX SHM objects, along with their name, data type and dimensions.
-This function only works on Linux because it directly accesses files
-exposed under `/dev/shm`. There doesn't seem to be a portable method
-of achieving this.
 
 ## Constants
 
