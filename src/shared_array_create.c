@@ -119,11 +119,9 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	for (int i = 0; i < ndims; i++)
 		descr->shape[i] = dims[i];
 
-	for (int i = 0; i < ndims; i++) {
-		descr->stride[i] = 1;
-		for (int j = i + 1; j < ndims; j++) 
-			descr->stride[i] *=  aligned ? aligned_dims[j] : descr->shape[j];
-	}
+	descr->stride[ndims-1] = 1;
+	for (int i = ndims-2; i >= 0; i--) 
+		descr->stride[i] = (aligned ? aligned_dims[i+1] : dims[i+1]) * descr->stride[i+1];
 
 	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
 	for (int i = 0; i < array_descr_ndims(descr); i++) 
