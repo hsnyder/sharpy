@@ -31,10 +31,19 @@
 #include "shared_array.h"
 #include "map_owner.h"
 
+
+static inline long 
+align64_roundup(long elsz, long val) 
+{
+	const long els64 = 64/elsz;
+	if (val % els64 == 0) return val;
+	return ((val/els64)+1) *els64;
+}
+
 /*
  * Create a numpy array in shared memory
  */
-static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_Descr *dtype)
+static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_Descr *dtype, int aligned)
 {
 	struct array_descr *descr;
 	size_t size;
@@ -63,9 +72,15 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	}
 
 	/* Calculate the memory size of the array */
+	int64_t aligned_dims[SHARED_ARRAY_MAX_DIMS] = {};
+	for (int i = 0; i < ndims; i++)
+		aligned_dims[i] = aligned ? align64_roundup(dtype->elsize, dims[i]) : dims[i]; 
+	
+
 	size = dtype->elsize;
 	for (int i = 0; i < ndims; i++)
-		size *= dims[i];
+		size *= (aligned && i>0) ? aligned_dims[i] : dims[i];
+
 
 	/* Calculate the size of the mmap'd area */
 	map_size = size + sizeof (*descr);
@@ -106,9 +121,8 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 
 	for (int i = 0; i < ndims; i++) {
 		descr->stride[i] = 1;
-		for (int j = i + 1; j < ndims; j++) {
-			descr->stride[i] *= descr->shape[j];
-		}
+		for (int j = i + 1; j < ndims; j++) 
+			descr->stride[i] *=  aligned ? aligned_dims[j] : descr->shape[j];
 	}
 
 	int64_t strides_bytes[SHARED_ARRAY_MAX_DIMS] = {};
@@ -140,17 +154,18 @@ PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *kwds)
 {
 	(void) self;
 
-	static char *kwlist[] = { "name", "shape", "dtype", NULL };
+	static char *kwlist[] = { "name", "shape", "dtype", "aligned", NULL };
 	const char *name;
 	PyArray_Dims shape = { NULL, 0 };
 	PyArray_Descr *dtype = NULL;
 	PyObject *ret = NULL;
+	int aligned = 0;
 
 	/* Parse the arguments */
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO&|O&", kwlist,
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO&|O&p", kwlist,
 					 &name,
 					 PyArray_IntpConverter, &shape,
-					 PyArray_DescrConverter, &dtype))
+					 PyArray_DescrConverter, &dtype, &aligned))
 		goto out;
 
 	/* Check the type */
@@ -158,7 +173,7 @@ PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *kwds)
 		dtype = PyArray_DescrFromType(NPY_DEFAULT_TYPE);
 
 	/* Now do the real thing */
-	ret = do_create(name, shape.len, shape.ptr, dtype);
+	ret = do_create(name, shape.len, shape.ptr, dtype, aligned);
 
 out:	/* Clean-up on exit */
 	if (shape.ptr)
