@@ -50,12 +50,6 @@ static PyMethodDef module_functions[] = {
 	  METH_VARARGS,
 	  "Delete an existing numpy array from shared memory" },
 
-#ifdef __linux__
-	{ "list", (PyCFunction) shared_array_list,
-	  METH_VARARGS,
-	  "List all existing numpy arrays from shared memory" },
-#endif
-
 	{ NULL, NULL, 0, NULL }
 };
 

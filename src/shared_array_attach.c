@@ -40,7 +40,7 @@ static PyObject *do_attach(const char *name)
 	int fd;
 	struct stat file_info;
 	size_t map_size;
-	void *map_addr;
+	unsigned char *map_addr;
 	PyObject *array;
 	PyMapOwnerObject *map_owner;
 
@@ -55,7 +55,7 @@ static PyObject *do_attach(const char *name)
 	}
 
 	/* Ignore short files */
-	if (file_info.st_size < sizeof (*meta)) {
+	if (file_info.st_size < (off_t) sizeof (*meta)) {
 		close(fd);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
 		return NULL;
@@ -107,6 +107,8 @@ static PyObject *do_attach(const char *name)
  */
 PyObject *shared_array_attach(PyObject *self, PyObject *args)
 {
+	(void) self;
+
 	const char *name;
 
 	/* Parse the arguments */

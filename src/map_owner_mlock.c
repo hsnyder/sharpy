@@ -22,6 +22,8 @@
 
 PyObject *map_owner_mlock(PyMapOwnerObject *self, PyObject *args)
 {
+	(void) args;
+
 	/* Call mlock(2) */
 	if (mlock(self->map_addr, self->map_size) < 0)
 		return PyErr_SetFromErrno(PyExc_OSError);

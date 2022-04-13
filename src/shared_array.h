@@ -49,11 +49,6 @@ extern PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *k
 extern PyObject *shared_array_attach(PyObject *self, PyObject *args);
 extern PyObject *shared_array_delete(PyObject *self, PyObject *args);
 
-/* SHM list function */
-#ifdef __linux__
-extern PyObject *shared_array_list(PyObject *self, PyObject *args);
-#endif
-
 /* Support functions */
 extern int open_file(const char *name, int flags, mode_t mode);
 extern int unlink_file(const char *name);

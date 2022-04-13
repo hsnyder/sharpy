@@ -39,7 +39,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	struct array_meta *meta;
 	size_t size;
 	size_t map_size;
-	void *map_addr;
+	unsigned char *map_addr;
 	int i;
 	int fd;
 	struct stat file_info;
@@ -118,6 +118,8 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
  */
 PyObject *shared_array_create(PyObject *self, PyObject *args, PyObject *kwds)
 {
+	(void) self;
+
 	static char *kwlist[] = { "name", "shape", "dtype", NULL };
 	const char *name;
 	PyArray_Dims shape = { NULL, 0 };

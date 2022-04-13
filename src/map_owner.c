@@ -79,10 +79,10 @@ static struct PyMemberDef members[] = {
  */
 PyTypeObject PyMapOwner_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	tp_name           : "shared_array.map_owner",
-	tp_basicsize      : sizeof (PyMapOwnerObject),
-	tp_dealloc        : (destructor) do_dealloc,
-	tp_flags          : Py_TPFLAGS_DEFAULT,
-	tp_methods        : methods,
-	tp_members        : members,
+	.tp_name           = "shared_array.map_owner",
+	.tp_basicsize      = sizeof (PyMapOwnerObject),
+	.tp_dealloc        = (destructor) do_dealloc,
+	.tp_flags          = Py_TPFLAGS_DEFAULT,
+	.tp_methods        = methods,
+	.tp_members        = members,
 };
