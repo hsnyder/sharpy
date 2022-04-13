@@ -26,19 +26,72 @@
 #include <Python.h>
 #include <structseq.h>
 #include <numpy/arrayobject.h>
+#include <stdint.h>
+#include <limits.h>
 
 /* Magic header */
-#define SHARED_ARRAY_MAGIC	"[SharedArray]"
+#define SHARED_ARRAY_MAGIC 0x5f3759df 
 
-/* Array metadata */
-struct array_meta {
-	char	magic[16];
-	size_t	size;
-	int	typenum;
-	int	itemsize;
-	int	ndims;
-	npy_intp dims[NPY_MAXDIMS];
-} __attribute__ ((packed));
+#define SHARED_ARRAY_MAX_DIMS 7
+extern const int ACTUAL_MAXDIMS;
+
+/* Array descrdata */
+struct array_descr {
+	int32_t magic;
+	int32_t typenum;
+	int64_t shape[SHARED_ARRAY_MAX_DIMS];
+	int64_t stride[SHARED_ARRAY_MAX_DIMS];
+	int32_t pad[2];
+};
+
+_Static_assert(sizeof(struct array_descr) == 128, "Unsupported platform: array descriptor size is not 128 bytes.");
+
+static inline int 
+array_descr_ndims(struct array_descr * ad)
+{
+	unsigned i = 0;
+	for(i = 0; i < sizeof(ad->shape)/sizeof(ad->shape[0]) && ad->shape[i] != 0; i++);
+	return i & INT_MAX;
+}
+
+static inline int
+supported_type(enum NPY_TYPES t)
+{
+	switch (t) {
+	case NPY_BOOL:
+	case NPY_BYTE:
+	case NPY_SHORT:
+	case NPY_INT:
+	case NPY_LONG:
+	case NPY_LONGLONG:
+	case NPY_UBYTE:
+	case NPY_USHORT:
+	case NPY_UINT:
+	case NPY_ULONG:
+	case NPY_ULONGLONG:
+	case NPY_HALF:
+	case NPY_FLOAT:
+	case NPY_DOUBLE:
+	case NPY_LONGDOUBLE:
+	case NPY_CFLOAT:
+	case NPY_CDOUBLE:
+	case NPY_CLONGDOUBLE:
+		return 1;
+	case NPY_DATETIME:
+	case NPY_TIMEDELTA:
+	case NPY_STRING:
+	case NPY_UNICODE:
+	case NPY_OBJECT:
+	case NPY_VOID:
+	case NPY_NTYPES: 
+	case NPY_NOTYPE:
+	case NPY_USERDEF:
+		return 0;
+	default: 
+		return 0;
+	}
+}
+
 
 /* ArrayDesc object */
 extern PyStructSequence_Desc PyArrayDescObject_Desc;

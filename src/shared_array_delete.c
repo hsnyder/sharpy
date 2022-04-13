@@ -33,7 +33,7 @@
  */
 static PyObject *do_delete(const char *name)
 {
-	struct array_meta *meta;
+	struct array_descr *descr;
 	int fd;
 	struct stat file_info;
 	size_t map_size;
@@ -50,7 +50,7 @@ static PyObject *do_delete(const char *name)
 	}
 
 	/* Ignore short files */
-	if (file_info.st_size < (off_t)sizeof (*meta)) {
+	if (file_info.st_size < (off_t)sizeof (*descr)) {
 		close(fd);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
 		return NULL;
@@ -63,9 +63,9 @@ static PyObject *do_delete(const char *name)
 	if (map_addr == MAP_FAILED)
 		return PyErr_SetFromErrnoWithFilename(PyExc_OSError, name);
 
-	/* Check the meta data */
-	meta = (struct array_meta *) (map_addr + (map_size - sizeof (*meta)));
-	if (strncmp(meta->magic, SHARED_ARRAY_MAGIC, sizeof (meta->magic))) {
+	/* Check the descr data */
+	descr = (struct array_descr *) (map_addr + (map_size - sizeof (*descr)));
+	if (descr->magic != SHARED_ARRAY_MAGIC) {
 		munmap(map_addr, map_size);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
 		return NULL;

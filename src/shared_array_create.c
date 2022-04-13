@@ -36,7 +36,7 @@
  */
 static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_Descr *dtype)
 {
-	struct array_meta *meta;
+	struct array_descr *descr;
 	size_t size;
 	size_t map_size;
 	unsigned char *map_addr;
@@ -47,10 +47,19 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	PyMapOwnerObject *map_owner;
 
 	/* Check the number of dimensions */
-	if (ndims > NPY_MAXDIMS) {
+	if (ndims > ACTUAL_MAXDIMS) {
 		PyErr_Format(PyExc_ValueError,
 			     "number of dimensions must be within [0, %d]",
-			     NPY_MAXDIMS);
+			     ACTUAL_MAXDIMS);
+		return NULL;
+	}
+
+
+	/* Check that the type is supported */
+	if (!supported_type(dtype->type_num)) {
+		PyErr_Format(PyExc_ValueError,
+			     "Unsupported data type %d",
+			     dtype->type_num);
 		return NULL;
 	}
 
@@ -60,7 +69,7 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 		size *= dims[i];
 
 	/* Calculate the size of the mmap'd area */
-	map_size = size + sizeof (*meta);
+	map_size = size + sizeof (*descr);
 
 	/* Create the file */
 	if ((fd = open_file(name, O_RDWR | O_CREAT | O_EXCL, 0666)) < 0)
@@ -86,15 +95,19 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	if (map_addr == MAP_FAILED)
 		return PyErr_SetFromErrnoWithFilename(PyExc_OSError, name);
 
-	/* Append the meta-data to the array in memory */
-	meta = (struct array_meta *) (map_addr + (map_size - sizeof (*meta)));
-	strncpy(meta->magic, SHARED_ARRAY_MAGIC, sizeof (meta->magic));
-	meta->size     = size;
-	meta->typenum  = dtype->type_num;
-	meta->itemsize = dtype->elsize;
-	meta->ndims    = ndims;
+	/* Append the descr-data to the array in memory */
+	descr = (struct array_descr *) (map_addr + (map_size - sizeof (*descr)));
+	*descr = (struct array_descr){
+		.magic   = SHARED_ARRAY_MAGIC, 
+		.typenum = dtype->type_num
+	};
 	for (i = 0; i < ndims; i++)
-		meta->dims[i] = dims[i];
+		descr->shape[i] = dims[i];
+	for (i = 0; i < ndims; i++) {
+		descr->stride[i] = 1;
+		for (int j = i + 1; j < ndims; j++) 
+			descr->stride[i] *= descr->shape[i];
+	}
 
 	/* Hand over the memory map to a MapOwner instance */
 	map_owner = PyObject_MALLOC(sizeof (*map_owner));
@@ -104,8 +117,8 @@ static PyObject *do_create(const char *name, int ndims, npy_intp *dims, PyArray_
 	map_owner->name = strdup(name);
 
 	/* Create the array object */
-	array = PyArray_New(&PyArray_Type, meta->ndims, meta->dims,
-	                    meta->typenum, NULL, map_addr, meta->itemsize,
+	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
+	                    descr->typenum, NULL, map_addr, 0,
 	                    NPY_ARRAY_CARRAY, NULL);
 
 	/* Attach MapOwner to the array */

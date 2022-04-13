@@ -36,7 +36,7 @@
  */
 static PyObject *do_attach(const char *name)
 {
-	struct array_meta *meta;
+	struct array_descr *descr;
 	int fd;
 	struct stat file_info;
 	size_t map_size;
@@ -55,7 +55,7 @@ static PyObject *do_attach(const char *name)
 	}
 
 	/* Ignore short files */
-	if (file_info.st_size < (off_t) sizeof (*meta)) {
+	if (file_info.st_size < (off_t) sizeof (*descr)) {
 		close(fd);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
 		return NULL;
@@ -68,20 +68,19 @@ static PyObject *do_attach(const char *name)
 	if (map_addr == MAP_FAILED)
 		return PyErr_SetFromErrnoWithFilename(PyExc_OSError, name);
 
-	/* Check the meta data */
-	meta = (struct array_meta *) (map_addr + (map_size - sizeof (*meta)));
-	if (strncmp(meta->magic, SHARED_ARRAY_MAGIC, sizeof (meta->magic))) {
+	/* Check the descr data */
+	descr = (struct array_descr *) (map_addr + (map_size - sizeof (*descr)));
+	if (descr->magic != SHARED_ARRAY_MAGIC) {
 		munmap(map_addr, map_size);
 		PyErr_SetString(PyExc_IOError, "No SharedArray at this address");
 		return NULL;
 	}
 
-	/* Check the number of dimensions */
-	if (meta->ndims > NPY_MAXDIMS) {
-		munmap(map_addr, map_size);
+	/* Check that the type is supported */
+	if (!supported_type(descr->typenum)) {
 		PyErr_Format(PyExc_ValueError,
-			     "number of dimensions must be within [0, %d]",
-			     NPY_MAXDIMS);
+			     "Unsupported data type %d",
+			     descr->typenum);
 		return NULL;
 	}
 
@@ -93,8 +92,8 @@ static PyObject *do_attach(const char *name)
 	map_owner->name = strdup(name);
 
 	/* Create the array object */
-	array = PyArray_New(&PyArray_Type, meta->ndims, meta->dims,
-	                    meta->typenum, NULL, map_addr, meta->itemsize,
+	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
+	                    descr->typenum, NULL, map_addr, 0,
 	                    NPY_ARRAY_CARRAY, NULL);
 
 	/* Attach MapOwner to the array */

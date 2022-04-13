@@ -26,6 +26,8 @@
 #include "shared_array.h"
 #include "map_owner.h"
 
+const int ACTUAL_MAXDIMS = NPY_MAXDIMS < SHARED_ARRAY_MAX_DIMS ? NPY_MAXDIMS : SHARED_ARRAY_MAX_DIMS;
+
 /* Module name */
 static const char module_name[] = "SharedArray";
 
