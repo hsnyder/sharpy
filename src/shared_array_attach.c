@@ -93,7 +93,7 @@ static PyObject *do_attach(const char *name)
 
 	/* Create the array object */
 	array = PyArray_New(&PyArray_Type, array_descr_ndims(descr), descr->shape,
-	                    descr->typenum, NULL, map_addr, 0,
+	                    descr->typenum, descr->stride, map_addr, 0,
 	                    NPY_ARRAY_CARRAY, NULL);
 
 	/* Attach MapOwner to the array */
